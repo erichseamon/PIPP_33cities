@@ -1,0 +1,27 @@
+{
+    "id": "64A6D843",
+    "path": "~/git/PIPP_33cities/src/model.R",
+    "project_path": "src/model.R",
+    "type": "r_source",
+    "hash": "1187631338",
+    "contents": "",
+    "dirty": false,
+    "created": 1701454758967.0,
+    "source_on_save": false,
+    "relative_order": 1,
+    "properties": {
+        "tempName": "Untitled1",
+        "source_window_id": "",
+        "Source": "Source",
+        "cursorPosition": "62,56",
+        "scrollLine": "33"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1701466460,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1701466460907,
+    "read_only": false,
+    "read_only_alternatives": []
+}
