@@ -20,6 +20,8 @@ library(data.table)
 library(dplyr)
 library(ggplot2)
 library(factoextra)
+library(dbnR)
+library(caret)
 setwd("/mnt/ceph/erichs/git/PIPP_33cities")
 files <- list.files(path = "./data/33cities/", pattern = ".csv")
 setwd("/mnt/ceph/erichs/git/PIPP_33cities/data/33cities/")
@@ -56,3 +58,30 @@ data_atlanta_ts <- read.zoo(data_atlanta)
 
 
 test <- loess(1:nrow(data_atlanta)~X..Analytic....mean.., data_atlanta)
+
+
+#---dbnr run
+
+
+library(dbnR)
+#> Loading required package: bnlearn
+#> 
+#> Attaching package: 'dbnR'
+#> The following objects are masked from 'package:bnlearn':
+#> 
+#>     degree, nodes, nodes<-, score
+data(motor)
+
+size <- 3
+
+split_rows = createDataPartition(data_timepoint$X..hospital....mean.., p = 0.8, list = FALSE, times = 1)
+dt_train = data_timepoint[split_rows,] 
+dt_test = data_timepoint[-split_rows,] 
+
+size <- 3
+
+net <- learn_dbn_struc(dt_train, size)
+
+
+
+
