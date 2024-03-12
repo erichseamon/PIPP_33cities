@@ -29,6 +29,7 @@ library(FeatureImpCluster)
 library(flexclust)
 library(gridExtra)
 library(sf)
+library(RColorBrewer)
 setwd("/mnt/ceph/erichs/git/PIPP_33cities")
 files <- list.files(path = "./data/33cities/", pattern = ".csv")
 setwd("/mnt/ceph/erichs/git/PIPP_33cities/data/33cities/")
@@ -38,10 +39,12 @@ data <- rbindlist( temp )
 #reduce cities to three for visualization
 
 data2 <- subset(data, city == c("san francisco", "austin", "atlanta"))
+data_aggregate <- aggregate(data$hospitalizatoin, list(data$time), FUN=sum)
+colnames(data_aggregate) <- c("time", "hospitalizations")
+data_aggregate %>%
+  ggplot( aes(x=time, y=hospitalizations)) +
+  geom_line() + theme_bw()
 
-data2 %>%
-  ggplot( aes(x=time, y=hospitalizatoin, group=city, color=city)) +
-  geom_line()
 
 #select mean values and add city as rowname
 data_mean_prep <- data
@@ -74,11 +77,12 @@ daterangez <- daterangez[15:length(daterangez)-7]
 
 setwd("/mnt/ceph/erichs/git/PIPP_33cities/")
 
-daterangez <- daterangez[1]
-cs_data <- NULL
-clusterframe <- NULL
+#daterangez <- daterangez[1]
 for (i in as.list(daterangez)) {
+  cs_data <- NULL
+  clusterframe <- NULL
   data_timepoint <- cityfinal[cityfinal$time == i,]
+  data_aggregate2 <- data_aggregate[data_aggregate$time == i,]
   
 #data_timepoint <- cityfinal[cityfinal$time == "2020-03-01",]
 
@@ -89,14 +93,23 @@ cluster_sil <- fviz_nbclust(data_timepoint[,1:4], kmeans, method = "silhouette")
 
 clusternumber_sil <- cluster_sil$data[which.max(cluster_sil$data$y), ]$clusters
 
-if (as.numeric(clusternumber_sil) > 3) {
+if (as.numeric(clusternumber_sil) >= 3) {
   clusternumber_sil = 3
+  k_colorz_dend = c("#00BFC4","#F8766D",  "#00BA38")
+  k_colorz_clust = c("#F8766D", "#00BFC4", "#00BA38")
 } else {
-  
+  k_colorz = c("#00BFC4", "#F8766D")
 }
 
-k2 <- kmeans(na.omit(data_timepoint[,1:4]), centers = as.numeric(clusternumber_sil), nstart = 25)
-h2 <- hcut(na.omit(data_timepoint[,1:4]), k = as.numeric(clusternumber_sil), hc_method = "complete")
+k_colorz_dend = c("#00BFC4","#F8766D")
+k_colorz_clust = c("#00BFC4","#F8766D")
+k_colorz = c("#00BFC4","#F8766D")
+
+k2 <- kmeans(na.omit(data_timepoint[,1:4]), centers = 2, nstart = 25)
+h2 <- hcut(na.omit(data_timepoint[,1:4]), k = 2, hc_method = "complete")
+
+#k2 <- kmeans(na.omit(data_timepoint[,1:4]), centers = as.numeric(clusternumber_sil), nstart = 25)
+#h2 <- hcut(na.omit(data_timepoint[,1:4]), k = as.numeric(clusternumber_sil), hc_method = "complete")
 
 d2 <- as.data.frame(data_timepoint)
 rownames(d2) <- data_timepoint$city
@@ -111,13 +124,44 @@ clusterframe <- cbind.data.frame(d2$time, d2$city, k2$cluster, h2$cluster[1])
 
 colnames(clusterframe) <- c("date", "NAME", "kcluster", "hcluster")
 
+first_cluster_count <- nrow(clusterframe[clusterframe$kcluster == 1,])
+second_cluster_count <- nrow(clusterframe[clusterframe$kcluster == 2,])
+
+if (first_cluster_count > second_cluster_count) {
+  
+} else {
+  clusterframe[clusterframe$kcluster == 1,]$kcluster = 3
+  clusterframe[clusterframe$kcluster == 2,]$kcluster = 4
+  clusterframe[clusterframe$kcluster == 3,]$kcluster = 2
+  clusterframe[clusterframe$kcluster == 4,]$kcluster = 1
+}
+
+
+first_cluster_count <- length(k2[k2$cluster == 2,])
+second_cluster_count <- length(k2[k2$cluster == 2,])
+
+if (first_cluster_count > second_cluster_count) {
+  
+} else {
+  k2[k2$cluster == 1,]$cluster = 3
+  k2[k2$cluster == 2,]$cluster = 4
+  k2[k2$cluster == 3,]$cluster = 2
+  k2[k2$cluster == 4,]$cluster = 1
+}
+
+
+
+
 #options(repr.plot.width = 5, repr.plot.height =2) 
-map1 <- fviz_cluster(k2, data=d2[,1:4], ellipse.type = "norm", show.clust.cent = FALSE,ellipse.alpha = 0, labelsize = 5) +
-  scale_shape_manual(values=c(3,17,19, 8, 7)) + theme(legend.position = "none") + theme(panel.background = element_blank())
+map1 <- fviz_cluster(k2, data=d2[,1:4], ellipse.type = "norm", show.clust.cent = FALSE, ellipse.alpha = 0, labelsize = 5) +
+  scale_shape_manual(values=c(3,17,19, 8, 7)) + theme(legend.position = "none") + theme(panel.background = element_blank()) + scale_colour_manual(values = k_colorz_clust)
 
 # Visualize dendrogram
 h2$labels <- data_timepoint$city
-map2 <- fviz_dend(h2, show_labels = TRUE, rect = TRUE, cex = .5)
+map2 <- fviz_dend(h2, show_labels = TRUE, rect = TRUE, cex = .5, k_colors = k_colorz_dend)
+
+
+covid1 <- ggplot( data=data_aggregate, aes(x=time, y=hospitalizations)) + geom_line() +geom_point(data=data_aggregate2, aes(x=time, y=hospitalizations), color="red")
 
   
 #US map
@@ -131,19 +175,18 @@ map2 <- fviz_dend(h2, show_labels = TRUE, rect = TRUE, cex = .5)
   
   clusterframe_cities <- merge(cities, clusterframe, by="NAME", duplicateGeoms = TRUE)
   
+  
   library(viridis)
   my_breaks <- c(0, .002, .004, .006, .008, .010, .012, .014, .016)
-  p <- ggplot(states) +
-    geom_sf() + geom_point(data=clusterframe_cities, aes(geometry = geometry), stat = "sf_coordinates", colour=clusterframe_cities$kcluster) +
-    theme(panel.background = element_blank())
+  p <- ggplot(states) + geom_sf() + geom_point(data=clusterframe_cities, aes(geometry = geometry, colour=factor(clusterframe_cities$kcluster)), stat = "sf_coordinates") + theme(panel.background = element_blank()) + theme(legend.position = "none") +  scale_colour_manual(values = k_colorz_clust)
   
-  g <- arrangeGrob(arrangeGrob(p), arrangeGrob(map1,map2, nrow=1), nrow=2, heights = c(1,2)) 
+  g <- arrangeGrob(arrangeGrob(p, covid1, nrow=1), arrangeGrob(map1,map2, nrow=1), nrow=2, heights = c(2,2)) 
   
   #g <- grid.arrange(p, arrangeGrob(map1, map2), nrow = 2)
 
 #g <- grid.arrange(map1, map2, p, ncol=2, nrow=2)
 
-  #ggsave(paste("./maps/", i, ".jpg", sep=""), g)
+  ggsave(paste("./maps/", i, ".jpg", sep=""), g)
 
 }
 
