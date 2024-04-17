@@ -30,6 +30,13 @@ library(flexclust)
 library(gridExtra)
 library(sf)
 library(RColorBrewer)
+
+
+
+#--------------STEP ONE - data prep
+
+
+
 setwd("/mnt/ceph/erichs/git/PIPP_33cities")
 files <- list.files(path = "./data/33cities/", pattern = ".csv")
 setwd("/mnt/ceph/erichs/git/PIPP_33cities/data/33cities/")
@@ -74,6 +81,14 @@ cityfinal <- cbind(cityfinal, data_mean[,74:75])
 
 daterangez <- unique(cityfinal$time)
 daterangez <- daterangez[15:length(daterangez)-7]
+
+
+
+#--------------STEP TWO - clustering for each time point
+
+
+
+
 
 setwd("/mnt/ceph/erichs/git/PIPP_33cities/")
 
@@ -136,18 +151,18 @@ if (first_cluster_count > second_cluster_count) {
   clusterframe[clusterframe$kcluster == 4,]$kcluster = 1
 }
 
-
-first_cluster_count <- length(k2[k2$cluster == 2,])
-second_cluster_count <- length(k2[k2$cluster == 2,])
-
-if (first_cluster_count > second_cluster_count) {
-  
-} else {
-  k2[k2$cluster == 1,]$cluster = 3
-  k2[k2$cluster == 2,]$cluster = 4
-  k2[k2$cluster == 3,]$cluster = 2
-  k2[k2$cluster == 4,]$cluster = 1
-}
+# 
+# first_cluster_count <- length(k2$cluster[k2$cluster == 2,])
+# second_cluster_count <- length(k2[k2$cluster == 2,])
+# 
+# if (first_cluster_count > second_cluster_count) {
+#   
+# } else {
+#   k2[k2$cluster == 1,]$cluster = 3
+#   k2[k2$cluster == 2,]$cluster = 4
+#   k2[k2$cluster == 3,]$cluster = 2
+#   k2[k2$cluster == 4,]$cluster = 1
+# }
 
 
 
@@ -186,12 +201,16 @@ covid1 <- ggplot( data=data_aggregate, aes(x=time, y=hospitalizations)) + geom_l
 
 #g <- grid.arrange(map1, map2, p, ncol=2, nrow=2)
 
-  ggsave(paste("./maps/", i, ".jpg", sep=""), g)
+  ggsave(paste("./maps/", i, ".jpg", sep=""), g, width = 200, height = 200, unit = "mm", dpi = 300)
 
 }
 
 setwd("/mnt/ceph/erichs/git/PIPP_33cities/maps/")
 system("convert -delay 40 *.jpg cluster_animate.gif")
+
+
+#--------------STEP THREE - feature importance
+
 
 #kmeans feature importance
 
@@ -208,5 +227,20 @@ data_atlanta_ts <- read.zoo(data_atlanta)
 
 
 test <- loess(1:nrow(data_atlanta)~X..Analytic....mean.., data_atlanta)
+
+
+#--------------STEP FOUR - time series clustering?
+
+
+#dtwclust
+library(dtwclust)
+
+
+library(zoo)
+data_atlanta <- cityfinal[city == "atlanta",]
+data_atlanta$time <- as.Date(data_atlanta$time)
+data_atlanta_ts <- read.zoo(data_atlanta)
+
+dtw_cluster2 = tsclust(data_atlanta_ts, type="partitional",k=6,preproc = zscore,distance="dtw_basic",centroid = "pam",trace=T)
 
 

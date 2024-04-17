@@ -136,7 +136,7 @@ test <- loess(1:nrow(data_atlanta)~X..Analytic....mean.., data_atlanta)
 
 library(dbnR)
 
-size <- 3
+#size <- 3
 
 split_rows = createDataPartition(data_atlanta$X..hospital....mean.., p = 0.8, list = FALSE, times = 1)
 dt_train = data_atlanta[split_rows,] 
@@ -144,11 +144,11 @@ dt_test = data_atlanta[-split_rows,]
 
 size <- 10
 
-net <- learn_dbn_struc(dt_train[,1:73], size)
+net <- learn_dbn_struc(dt_train[,1:4], size)
 
 
-f_dt_train <- fold_dt(dt_train[,1:73], size)
-f_dt_val <- fold_dt(dt_test[,1:73], size)
+f_dt_train <- fold_dt(dt_train[,1:4], size)
+f_dt_val <- fold_dt(dt_test[,1:4], size)
 fit <- dbnR::fit_dbn_params(net, f_dt_train, method = "mle-g")
 
 dbnR::plot_dynamic_network(fit)
